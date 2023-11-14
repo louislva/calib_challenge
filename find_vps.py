@@ -16,7 +16,6 @@ CENTER_RIGHT = 0.5 + CENTER_SIZE / 2
 MIN_ANGLE = math.tau / 12
 FOCAL_LENGTH = 910
 OUTLIER_RADIUS = 10
-FRAMES_TO_TEST = 1200
 
 def calc_line(p0, p1):
     dy = p1[1] - p0[1]
@@ -86,11 +85,10 @@ def process(video_path, vp_out_path, video_out_path):
     prev_points = None
     i = 0
     vps = []
-    t = tqdm.tqdm(total=FRAMES_TO_TEST)
+    t = tqdm.tqdm(total=cap.get(cv2.CAP_PROP_FRAME_COUNT))
     while(cap.isOpened()):
         ret, frame = cap.read()
         if ret == False: break
-        if i > FRAMES_TO_TEST: break
         
         if prev_points is not None:
             tracked_points, statuses, err = cv2.calcOpticalFlowPyrLK(
@@ -106,11 +104,11 @@ def process(video_path, vp_out_path, video_out_path):
             lines = []
             for status, point, prev_point in zip(statuses, tracked_points, prev_points):
                 if (status == 1):
-                    out_frame = cv2.circle(out_frame, (int(prev_point[0]), int(prev_point[1])), 3, (255, 0, 0), -1)
-                    out_frame = cv2.circle(out_frame, (int(point[0]), int(point[1])), 3, (0, 0, 255), -1)
+                    # out_frame = cv2.circle(out_frame, (int(prev_point[0]), int(prev_point[1])), 3, (255, 0, 0), -1)
+                    # out_frame = cv2.circle(out_frame, (int(point[0]), int(point[1])), 3, (0, 0, 255), -1)
                     m, b = calc_line(prev_point, point)
                     if m is not None: 
-                        out_frame = cv2.line(out_frame, (0, int(b)), (WIDTH, int(WIDTH * m + b)), (0, 255, 0), 2)
+                        # out_frame = cv2.line(out_frame, (0, int(b)), (WIDTH, int(WIDTH * m + b)), (0, 255, 0), 2)
                         lines.append([m, b])
             
             vp = calc_vanishing_point(lines)
@@ -141,8 +139,9 @@ def process(video_path, vp_out_path, video_out_path):
 def main():
     os.makedirs('vps', exist_ok=True)
     os.makedirs('viz', exist_ok=True)
-    with multiprocessing.Pool(5) as pool:
-        tasks = [(f'labeled/{i}.hevc', f'vps/{i}.txt', f'viz/{i}.mp4') for i in range(5)]
+    with multiprocessing.Pool(1) as pool:
+        # tasks = [(f'labeled/{i}.hevc', f'vps/{i}.txt', f'viz/{i}.mp4') for i in range(5)]
+        tasks = [(f'unlabeled/{i}.hevc', f'vps/{i}.txt', f'viz/{i}.mp4') for i in range(9, 10)]
         pool.starmap(process, tasks)
 
 if __name__ == '__main__':
